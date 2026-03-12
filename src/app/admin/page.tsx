@@ -54,6 +54,39 @@ const FIELD_CONFIGS: FieldConfig[] = [
   { key: "priority", label: "우선순위", type: "select", options: PRIORITIES, section: "ideal" },
 ];
 
+interface FilterState {
+  idealHeight: string;
+  idealAge: string;
+  idealRegion: string;
+  idealSmoking: string;
+  idealEducation: string;
+  idealJobType: string;
+  idealSalary: string;
+  priority: string;
+}
+
+const EMPTY_FILTER: FilterState = {
+  idealHeight: "",
+  idealAge: "",
+  idealRegion: "",
+  idealSmoking: "",
+  idealEducation: "",
+  idealJobType: "",
+  idealSalary: "",
+  priority: "",
+};
+
+const FILTER_OPTIONS: { key: keyof FilterState; label: string; options: string[] }[] = [
+  { key: "idealHeight", label: "이상형 키", options: HEIGHTS },
+  { key: "idealAge", label: "이상형 나이", options: BIRTH_YEAR_RANGES },
+  { key: "idealRegion", label: "이상형 거주지", options: REGIONS },
+  { key: "idealSmoking", label: "이상형 흡연여부", options: SMOKING },
+  { key: "idealEducation", label: "이상형 학력", options: EDUCATIONS },
+  { key: "idealJobType", label: "이상형 직업 형태", options: JOB_TYPES },
+  { key: "idealSalary", label: "이상형 연봉", options: SALARIES },
+  { key: "priority", label: "우선순위", options: PRIORITIES },
+];
+
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
   const [password, setPassword] = useState("");
@@ -63,6 +96,13 @@ export default function AdminPage() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [savingField, setSavingField] = useState<string | null>(null);
+  const [imageModal, setImageModal] = useState<string | null>(null);
+
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<FilterState>({ ...EMPTY_FILTER });
+  const [showFilters, setShowFilters] = useState(false);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
@@ -75,6 +115,18 @@ export default function AdminPage() {
   useEffect(() => {
     if (authed) fetchProfiles();
   }, [authed, fetchProfiles]);
+
+  const filteredProfiles = profiles.filter((p) => {
+    if (search) {
+      const q = search.toLowerCase();
+      const searchable = [p.name, p.gender, p.birthYear, p.region, p.jobType, p.mbti, p.job, p.education, p.phone].join(" ").toLowerCase();
+      if (!searchable.includes(q)) return false;
+    }
+    for (const fKey of Object.keys(filters) as (keyof FilterState)[]) {
+      if (filters[fKey] && p[fKey] !== filters[fKey]) return false;
+    }
+    return true;
+  });
 
   const handleBlock = async (id: string) => {
     await fetch("/api/profiles/block", {
@@ -153,6 +205,22 @@ export default function AdminPage() {
 
   return (
     <main className="min-h-screen bg-background">
+      {/* Image modal */}
+      {imageModal && (
+        <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4" onClick={() => setImageModal(null)}>
+          <div className="relative max-w-2xl max-h-[85vh] w-full" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setImageModal(null)} className="absolute -top-10 right-0 text-white/80 hover:text-white text-sm flex items-center gap-1">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              닫기
+            </button>
+            <img src={imageModal} alt="" className="w-full h-full object-contain rounded-2xl shadow-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold">
@@ -160,7 +228,11 @@ export default function AdminPage() {
             <span className="text-muted-fg text-sm font-normal ml-2">관리자</span>
           </h1>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-fg">총 {profiles.length}명</span>
+            <span className="text-sm text-muted-fg">
+              {filteredProfiles.length !== profiles.length
+                ? `${filteredProfiles.length} / ${profiles.length}명`
+                : `총 ${profiles.length}명`}
+            </span>
             <button onClick={fetchProfiles} className="px-4 py-2 text-sm bg-muted rounded-lg hover:bg-border transition-colors">
               새로고침
             </button>
@@ -168,23 +240,115 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Search & Filter bar */}
+      <div className="sticky top-[65px] z-40 bg-background/90 backdrop-blur-sm border-b border-border">
+        <div className="max-w-7xl mx-auto px-6 py-3 space-y-3">
+          <div className="flex items-center gap-3">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <svg className="w-4 h-4 text-muted-fg absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+              </svg>
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="이름, 지역, 직업, MBTI, 연락처 등으로 검색..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-border bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+              />
+              {search && (
+                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-fg hover:text-foreground">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                showFilters || activeFilterCount > 0
+                  ? "bg-accent/10 border-accent/30 text-accent"
+                  : "bg-white border-border text-foreground hover:border-primary/30"
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+              </svg>
+              이상형 필터
+              {activeFilterCount > 0 && (
+                <span className="bg-accent text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">{activeFilterCount}</span>
+              )}
+            </button>
+          </div>
+
+          {/* Filter panel */}
+          {showFilters && (
+            <div className="bg-white rounded-xl border border-border p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-accent">이상형 정보 필터</h3>
+                {activeFilterCount > 0 && (
+                  <button onClick={() => setFilters({ ...EMPTY_FILTER })} className="text-xs text-danger hover:underline">
+                    전체 초기화
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {FILTER_OPTIONS.map((fo) => (
+                  <div key={fo.key} className="space-y-1">
+                    <label className="text-xs text-muted-fg">{fo.label}</label>
+                    <div className="relative">
+                      <select
+                        value={filters[fo.key]}
+                        onChange={(e) => setFilters((prev) => ({ ...prev, [fo.key]: e.target.value }))}
+                        className="w-full text-sm appearance-none bg-muted/40 border border-transparent rounded-lg px-3 py-2 pr-7 cursor-pointer transition-all hover:border-accent/30 focus:border-accent focus:ring-2 focus:ring-accent/20 focus:outline-none"
+                      >
+                        <option value="">전체</option>
+                        {fo.options.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      <svg className="w-3.5 h-3.5 text-muted-fg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-w-7xl mx-auto px-6 py-6">
         {loading ? (
           <div className="flex justify-center py-20">
             <div className="w-8 h-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : profiles.length === 0 ? (
+        ) : filteredProfiles.length === 0 ? (
           <div className="text-center py-20 space-y-3">
             <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
               <svg className="w-8 h-8 text-muted-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
               </svg>
             </div>
-            <p className="text-muted-fg">등록된 프로필이 없습니다.</p>
+            <p className="text-muted-fg">
+              {profiles.length === 0 ? "등록된 프로필이 없습니다." : "검색/필터 조건에 맞는 프로필이 없습니다."}
+            </p>
+            {(search || activeFilterCount > 0) && (
+              <button
+                onClick={() => { setSearch(""); setFilters({ ...EMPTY_FILTER }); }}
+                className="text-sm text-primary hover:underline"
+              >
+                조건 초기화
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-4">
-            {profiles.map((p, idx) => {
+            {filteredProfiles.map((p, idx) => {
               const isExpanded = expandedId === p.id;
               const link = linkMap[p.id];
 
@@ -197,6 +361,7 @@ export default function AdminPage() {
                       : "bg-card border-border hover:shadow-md"
                   }`}
                 >
+                  {/* Row */}
                   <div
                     className="flex items-center gap-4 px-5 py-4 cursor-pointer"
                     onClick={() => setExpandedId(isExpanded ? null : p.id)}
@@ -247,14 +412,51 @@ export default function AdminPage() {
                     </div>
                   </div>
 
+                  {/* Expanded detail */}
                   {isExpanded && (
                     <div className="border-t border-border px-5 py-5">
-                      <div className="mb-3 flex items-center gap-2">
-                        <svg className="w-4 h-4 text-muted-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
-                        </svg>
-                        <p className="text-xs text-muted-fg">드롭다운 클릭 또는 텍스트 더블클릭으로 수정</p>
+                      {/* Large image + edit hint */}
+                      <div className="flex flex-col sm:flex-row gap-5 mb-5">
+                        {/* Large profile image */}
+                        <div
+                          className="w-full sm:w-48 h-60 rounded-2xl bg-muted overflow-hidden flex-shrink-0 cursor-pointer group relative"
+                          onClick={() => p.imageUrl && setImageModal(p.imageUrl)}
+                        >
+                          {p.imageUrl ? (
+                            <>
+                              <img src={p.imageUrl} alt="" className="w-full h-full object-cover" />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                                <svg className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
+                                </svg>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-fg text-4xl font-bold">
+                              {p.name?.[0] || "?"}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 mb-1">
+                            <svg className="w-4 h-4 text-muted-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                            </svg>
+                            <p className="text-xs text-muted-fg">드롭다운 클릭 또는 텍스트 더블클릭으로 수정 · 이미지 클릭 시 크게 보기</p>
+                          </div>
+                          <div className="text-xs text-muted-fg">
+                            등록일: {new Date(p.createdAt).toLocaleDateString("ko-KR")}
+                          </div>
+                          {link && (
+                            <div className="p-2.5 bg-accent/5 rounded-lg text-sm inline-block">
+                              <span className="text-muted-fg">링크 만료: </span>
+                              <span className="font-medium text-accent">{new Date(link.expiresAt).toLocaleDateString("ko-KR")}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Basic info grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {basicFields.map((fc) => (
                           <EditableField
@@ -267,6 +469,8 @@ export default function AdminPage() {
                           />
                         ))}
                       </div>
+
+                      {/* Ideal info grid */}
                       <div className="mt-5 pt-4 border-t border-border">
                         <h4 className="text-sm font-semibold text-accent mb-3">이상형 정보</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -281,15 +485,6 @@ export default function AdminPage() {
                             />
                           ))}
                         </div>
-                      </div>
-                      {link && (
-                        <div className="mt-4 p-3 bg-accent/5 rounded-xl text-sm">
-                          <span className="text-muted-fg">프로필 링크 만료: </span>
-                          <span className="font-medium text-accent">{new Date(link.expiresAt).toLocaleDateString("ko-KR")}</span>
-                        </div>
-                      )}
-                      <div className="mt-2 text-xs text-muted-fg">
-                        등록일: {new Date(p.createdAt).toLocaleDateString("ko-KR")}
                       </div>
                     </div>
                   )}
