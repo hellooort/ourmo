@@ -1,9 +1,58 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Profile } from "@/lib/types";
+import {
+  BIRTH_YEARS,
+  BIRTH_YEAR_RANGES,
+  GENDERS,
+  REGIONS,
+  EDUCATIONS,
+  HEIGHTS,
+  JOB_TYPES,
+  SALARIES,
+  SMOKING,
+  MBTI_TYPES,
+  PRIORITIES,
+} from "@/lib/options";
 
 const ADMIN_PASSWORD = "ourmo2026";
+
+type FieldKey = keyof Profile;
+
+interface FieldConfig {
+  key: FieldKey;
+  label: string;
+  type: "text" | "select" | "phone";
+  options?: string[];
+  section?: "basic" | "ideal";
+}
+
+const FIELD_CONFIGS: FieldConfig[] = [
+  { key: "name", label: "이름", type: "text", section: "basic" },
+  { key: "birthYear", label: "출생년도", type: "select", options: BIRTH_YEARS, section: "basic" },
+  { key: "birthYearRange", label: "출생년도 범위", type: "select", options: BIRTH_YEAR_RANGES, section: "basic" },
+  { key: "gender", label: "성별", type: "select", options: GENDERS, section: "basic" },
+  { key: "region", label: "거주지", type: "select", options: REGIONS, section: "basic" },
+  { key: "education", label: "학력", type: "select", options: EDUCATIONS, section: "basic" },
+  { key: "height", label: "키", type: "select", options: HEIGHTS, section: "basic" },
+  { key: "job", label: "직무", type: "text", section: "basic" },
+  { key: "jobType", label: "직업 형태", type: "select", options: JOB_TYPES, section: "basic" },
+  { key: "salary", label: "연봉", type: "select", options: SALARIES, section: "basic" },
+  { key: "smoking", label: "흡연", type: "select", options: SMOKING, section: "basic" },
+  { key: "mbti", label: "MBTI", type: "select", options: MBTI_TYPES, section: "basic" },
+  { key: "charm", label: "매력포인트", type: "text", section: "basic" },
+  { key: "datingStyle", label: "연애스타일", type: "text", section: "basic" },
+  { key: "phone", label: "연락처", type: "phone", section: "basic" },
+  { key: "idealHeight", label: "이상형 키", type: "select", options: HEIGHTS, section: "ideal" },
+  { key: "idealAge", label: "이상형 나이", type: "select", options: BIRTH_YEAR_RANGES, section: "ideal" },
+  { key: "idealRegion", label: "이상형 거주지", type: "select", options: REGIONS, section: "ideal" },
+  { key: "idealSmoking", label: "이상형 흡연여부", type: "select", options: SMOKING, section: "ideal" },
+  { key: "idealEducation", label: "이상형 학력", type: "select", options: EDUCATIONS, section: "ideal" },
+  { key: "idealJobType", label: "이상형 직업 형태", type: "select", options: JOB_TYPES, section: "ideal" },
+  { key: "idealSalary", label: "이상형 연봉", type: "select", options: SALARIES, section: "ideal" },
+  { key: "priority", label: "우선순위", type: "select", options: PRIORITIES, section: "ideal" },
+];
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false);
@@ -13,6 +62,7 @@ export default function AdminPage() {
   const [linkMap, setLinkMap] = useState<Record<string, { token: string; expiresAt: string }>>({});
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [savingField, setSavingField] = useState<string | null>(null);
 
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
@@ -33,6 +83,19 @@ export default function AdminPage() {
       body: JSON.stringify({ id }),
     });
     fetchProfiles();
+  };
+
+  const handleUpdateField = async (profileId: string, field: FieldKey, value: string) => {
+    setSavingField(`${profileId}-${field}`);
+    await fetch("/api/profiles", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: profileId, [field]: value }),
+    });
+    setProfiles((prev) =>
+      prev.map((p) => (p.id === profileId ? { ...p, [field]: value } : p))
+    );
+    setSavingField(null);
   };
 
   const handleCreateLink = async (profileId: string) => {
@@ -85,9 +148,11 @@ export default function AdminPage() {
     );
   }
 
+  const basicFields = FIELD_CONFIGS.filter((f) => f.section === "basic");
+  const idealFields = FIELD_CONFIGS.filter((f) => f.section === "ideal");
+
   return (
     <main className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <h1 className="text-xl font-bold">
@@ -103,7 +168,6 @@ export default function AdminPage() {
         </div>
       </header>
 
-      {/* Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
           <div className="flex justify-center py-20">
@@ -133,7 +197,6 @@ export default function AdminPage() {
                       : "bg-card border-border hover:shadow-md"
                   }`}
                 >
-                  {/* Row */}
                   <div
                     className="flex items-center gap-4 px-5 py-4 cursor-pointer"
                     onClick={() => setExpandedId(isExpanded ? null : p.id)}
@@ -159,10 +222,7 @@ export default function AdminPage() {
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleBlock(p.id);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); handleBlock(p.id); }}
                         className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                           p.blocked
                             ? "bg-success/10 text-success hover:bg-success/20"
@@ -174,11 +234,8 @@ export default function AdminPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (link) {
-                            handleCopyLink(p.id, link.token);
-                          } else {
-                            handleCreateLink(p.id);
-                          }
+                          if (link) handleCopyLink(p.id, link.token);
+                          else handleCreateLink(p.id);
                         }}
                         className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/10 text-accent hover:bg-accent/20 transition-colors"
                       >
@@ -190,37 +247,39 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  {/* Expanded detail */}
                   {isExpanded && (
                     <div className="border-t border-border px-5 py-5">
+                      <div className="mb-3 flex items-center gap-2">
+                        <svg className="w-4 h-4 text-muted-fg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L6.832 19.82a4.5 4.5 0 0 1-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 0 1 1.13-1.897L16.863 4.487Zm0 0L19.5 7.125" />
+                        </svg>
+                        <p className="text-xs text-muted-fg">드롭다운 클릭 또는 텍스트 더블클릭으로 수정</p>
+                      </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <DetailItem label="이름" value={p.name} blocked={p.blocked} />
-                        <DetailItem label="출생년도" value={p.birthYear} blocked={p.blocked} />
-                        <DetailItem label="출생년도 범위" value={p.birthYearRange} blocked={p.blocked} />
-                        <DetailItem label="성별" value={p.gender} blocked={p.blocked} />
-                        <DetailItem label="거주지" value={p.region} blocked={p.blocked} />
-                        <DetailItem label="학력" value={p.education} blocked={p.blocked} />
-                        <DetailItem label="키" value={p.height} blocked={p.blocked} />
-                        <DetailItem label="직무" value={p.job} blocked={p.blocked} />
-                        <DetailItem label="직업 형태" value={p.jobType} blocked={p.blocked} />
-                        <DetailItem label="연봉" value={p.salary} blocked={p.blocked} />
-                        <DetailItem label="흡연" value={p.smoking} blocked={p.blocked} />
-                        <DetailItem label="MBTI" value={p.mbti} blocked={p.blocked} />
-                        <DetailItem label="매력포인트" value={p.charm} blocked={p.blocked} />
-                        <DetailItem label="연애스타일" value={p.datingStyle} blocked={p.blocked} />
-                        <DetailItem label="연락처" value={p.phone} blocked={p.blocked} />
+                        {basicFields.map((fc) => (
+                          <EditableField
+                            key={fc.key}
+                            config={fc}
+                            value={p[fc.key] as string}
+                            saving={savingField === `${p.id}-${fc.key}`}
+                            onSave={(val) => handleUpdateField(p.id, fc.key, val)}
+                            blocked={p.blocked}
+                          />
+                        ))}
                       </div>
                       <div className="mt-5 pt-4 border-t border-border">
                         <h4 className="text-sm font-semibold text-accent mb-3">이상형 정보</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          <DetailItem label="이상형 키" value={p.idealHeight} blocked={p.blocked} />
-                          <DetailItem label="이상형 나이" value={p.idealAge} blocked={p.blocked} />
-                          <DetailItem label="이상형 거주지" value={p.idealRegion} blocked={p.blocked} />
-                          <DetailItem label="이상형 흡연여부" value={p.idealSmoking} blocked={p.blocked} />
-                          <DetailItem label="이상형 학력" value={p.idealEducation} blocked={p.blocked} />
-                          <DetailItem label="이상형 직업 형태" value={p.idealJobType} blocked={p.blocked} />
-                          <DetailItem label="이상형 연봉" value={p.idealSalary} blocked={p.blocked} />
-                          <DetailItem label="우선순위" value={p.priority} blocked={p.blocked} />
+                          {idealFields.map((fc) => (
+                            <EditableField
+                              key={fc.key}
+                              config={fc}
+                              value={p[fc.key] as string}
+                              saving={savingField === `${p.id}-${fc.key}`}
+                              onSave={(val) => handleUpdateField(p.id, fc.key, val)}
+                              blocked={p.blocked}
+                            />
+                          ))}
                         </div>
                       </div>
                       {link && (
@@ -244,13 +303,105 @@ export default function AdminPage() {
   );
 }
 
-function DetailItem({ label, value, blocked }: { label: string; value: string; blocked: boolean }) {
+function EditableField({
+  config,
+  value,
+  saving,
+  onSave,
+  blocked,
+}: {
+  config: FieldConfig;
+  value: string;
+  saving: boolean;
+  onSave: (val: string) => void;
+  blocked: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [editing]);
+
+  const commitText = () => {
+    setEditing(false);
+    if (draft.trim() !== value) {
+      onSave(draft.trim());
+    }
+  };
+
+  if (config.type === "select" && config.options) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs text-muted-fg">{config.label}</p>
+        <div className="relative">
+          <select
+            value={value}
+            onChange={(e) => onSave(e.target.value)}
+            disabled={blocked}
+            className={`w-full text-sm font-medium appearance-none bg-muted/40 border border-transparent rounded-lg px-3 py-2 pr-8 cursor-pointer transition-all hover:border-primary/30 focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed ${
+              saving ? "opacity-50" : ""
+            } ${blocked ? "line-through text-gray-400" : ""}`}
+          >
+            <option value="">-</option>
+            {config.options.map((opt) => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <svg className="w-4 h-4 text-muted-fg absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-1">
-      <p className="text-xs text-muted-fg">{label}</p>
-      <p className={`text-sm font-medium ${blocked ? "line-through text-gray-400" : ""}`}>
-        {value || "-"}
-      </p>
+      <p className="text-xs text-muted-fg">{config.label}</p>
+      {editing ? (
+        <input
+          ref={inputRef}
+          type={config.type === "phone" ? "tel" : "text"}
+          value={draft}
+          onChange={(e) => {
+            if (config.type === "phone") {
+              const val = e.target.value.replace(/[^0-9]/g, "");
+              if (val.length <= 11) setDraft(val);
+            } else {
+              setDraft(e.target.value);
+            }
+          }}
+          onBlur={commitText}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commitText();
+            if (e.key === "Escape") { setDraft(value); setEditing(false); }
+          }}
+          className={`w-full text-sm font-medium bg-white border border-primary rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+            config.type === "phone" ? "tracking-widest" : ""
+          }`}
+        />
+      ) : (
+        <p
+          onDoubleClick={() => { if (!blocked) setEditing(true); }}
+          className={`text-sm font-medium px-3 py-2 rounded-lg transition-all cursor-default ${
+            blocked
+              ? "line-through text-gray-400"
+              : "hover:bg-primary-light/40 cursor-text border border-transparent hover:border-primary/20"
+          } ${saving ? "opacity-50" : ""}`}
+          title={blocked ? "" : "더블클릭하여 수정"}
+        >
+          {value || <span className="text-muted-fg/50">-</span>}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { v4 as uuidv4 } from "uuid";
-import { addProfile, getProfiles } from "@/lib/store";
+import { addProfile, getProfiles, updateProfile } from "@/lib/store";
 import { Profile } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -47,4 +47,16 @@ export async function POST(req: NextRequest) {
 
   addProfile(profile);
   return NextResponse.json({ success: true, id: profile.id });
+}
+
+export async function PATCH(req: NextRequest) {
+  const { id, ...updates } = await req.json();
+  if (!id) {
+    return NextResponse.json({ error: "ID가 필요합니다." }, { status: 400 });
+  }
+  const profile = updateProfile(id, updates);
+  if (!profile) {
+    return NextResponse.json({ error: "프로필을 찾을 수 없습니다." }, { status: 404 });
+  }
+  return NextResponse.json({ success: true, profile });
 }

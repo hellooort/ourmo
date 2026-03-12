@@ -105,6 +105,14 @@ export function addProfile(profile: Profile) {
   profiles.push(profile);
 }
 
+export function updateProfile(id: string, updates: Partial<Profile>): Profile | undefined {
+  const profile = profiles.find((p) => p.id === id);
+  if (profile) {
+    Object.assign(profile, updates);
+  }
+  return profile;
+}
+
 export function toggleBlock(id: string): Profile | undefined {
   const profile = profiles.find((p) => p.id === id);
   if (profile) {
