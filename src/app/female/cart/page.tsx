@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { User } from "@/lib/types";
 import { regionLabel } from "@/lib/options";
 
-export default function CartPage() {
+export default function MatchRequestListPage() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [cartUsers, setCartUsers] = useState<User[]>([]);
@@ -34,7 +34,7 @@ export default function CartPage() {
     setLoading(false);
   };
 
-  const removeFromCart = async (targetId: string) => {
+  const removeFromList = async (targetId: string) => {
     if (!currentUser) return;
     await fetch("/api/cart", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: currentUser.id, targetId }) });
     setCartUsers(prev => prev.filter(u => u.id !== targetId));
@@ -59,7 +59,7 @@ export default function CartPage() {
           <div className="w-20 h-20 bg-success/10 rounded-full flex items-center justify-center mx-auto">
             <svg className="w-10 h-10 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
           </div>
-          <h2 className="text-2xl font-bold">선택이 확정되었습니다!</h2>
+          <h2 className="text-2xl font-bold">매칭 요청이 전달되었습니다!</h2>
           <p className="text-muted-fg">상대방이 수락하면 매칭이 완료됩니다.</p>
           <button onClick={() => router.push("/female")} className="px-6 py-3 bg-primary text-white rounded-xl font-semibold hover:bg-primary-dark transition-colors">
             돌아가기
@@ -78,20 +78,21 @@ export default function CartPage() {
           <button onClick={() => router.push("/female")} className="text-muted-fg hover:text-foreground">
             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <h1 className="text-lg font-bold flex-1">장바구니 ({cartUsers.length}명)</h1>
+          <h1 className="text-lg font-bold flex-1">매칭 요청 목록 ({cartUsers.length}명)</h1>
         </div>
       </header>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
         {cartUsers.length === 0 ? (
           <div className="text-center py-20 text-muted-fg">
-            <p className="text-lg">장바구니가 비어있습니다</p>
-            <p className="text-sm mt-2">마음에 드는 프로필에 하트를 눌러주세요</p>
+            <p className="text-lg">매칭 요청 목록이 비어있습니다</p>
+            <p className="text-sm mt-2">마음에 드는 프로필에 하트를 눌러 추가해주세요</p>
           </div>
         ) : (
           <div className="space-y-4">
             {cartUsers.map((u) => (
-              <div key={u.id} className="flex items-center gap-4 bg-card rounded-2xl border border-border p-4 hover:shadow-md transition-shadow">
+              <div key={u.id} className="flex items-center gap-4 bg-card rounded-2xl border border-border p-4 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => router.push(`/female/${u.id}`)}>
                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-muted flex-shrink-0">
                   {u.imageUrl ? <img src={u.imageUrl} alt={u.name} className="w-full h-full object-cover" /> :
                     <div className="w-full h-full flex items-center justify-center text-2xl font-bold text-primary/20">{u.name?.[0]}</div>}
@@ -104,7 +105,7 @@ export default function CartPage() {
                     <span className="text-xs px-2 py-0.5 bg-muted rounded-full">{u.mbti}</span>
                   </div>
                 </div>
-                <button onClick={() => removeFromCart(u.id)} className="text-muted-fg hover:text-danger transition-colors p-2">
+                <button onClick={(e) => { e.stopPropagation(); removeFromList(u.id); }} className="text-muted-fg hover:text-danger transition-colors p-2">
                   <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -113,7 +114,7 @@ export default function CartPage() {
             <div className="pt-4">
               <button onClick={handleConfirm} disabled={confirming}
                 className="w-full py-4 bg-primary text-white rounded-2xl font-bold text-lg hover:bg-primary-dark transition-colors disabled:opacity-40 shadow-lg">
-                {confirming ? "처리 중..." : `${cartUsers.length}명 선택 확정하기`}
+                {confirming ? "처리 중..." : `${cartUsers.length}명에게 매칭 요청 보내기`}
               </button>
             </div>
           </div>

@@ -113,6 +113,17 @@ const SEED_USERS: User[] = [
     idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
     idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "키",
   },
+  // 승인됨 but 매칭 요청 0건 (데모: 아직 아무도 선택 안 한 남성)
+  {
+    id: "m-lonely", email: "lonely@test.com", password: "1234", gender: "남자", status: "approved", createdAt: "2026-03-11T12:00:00.000Z", expiresAt: "2026-04-11T12:00:00.000Z", blocked: false,
+    imageUrl: "/uploads/packhyunwoo.png", name: "서진호", birthYear: "1995년", city: "서울", district: "서부",
+    education: "서울 4년제 졸업", height: "181", job: "게임회사_기획자", jobType: "대기업",
+    salary: "6,000만원 이상 ~ 8,000만원 미만", smoking: "비흡연", mbti: "INFJ",
+    charm: "깊은 대화를 좋아하고, 상대의 이야기에 진심으로 귀 기울여요", datingStyle: "카페에서 오래 이야기하고, 밤에 산책하는 스타일", phone: "01012340000",
+    idealHeight: "156 ~ 160", idealAge: "1996년 ~ 1994년", idealCity: "서울", idealDistrict: "서부",
+    idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
+    idealSalary: "4,000만원 이상 ~ 6,000만원 미만", priority: "거주지",
+  },
   // 승인대기 남성 (NEW 딱지 테스트)
   {
     id: "m-010", email: "newguy@test.com", password: "1234", gender: "남자", status: "pending", createdAt: new Date().toISOString(), expiresAt: null, blocked: false,
