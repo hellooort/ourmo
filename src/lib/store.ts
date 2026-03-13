@@ -157,16 +157,27 @@ const SEED_USERS: User[] = [
     idealSmoking: "비흡연", idealEducation: "기타 4년제 졸업", idealJobType: "중소기업",
     idealSalary: "3,000만원 이상 ~ 4,000만원 미만", priority: "거주지",
   },
-  // 승인대기 여성 (NEW)
+  // 승인된 여성 (매칭 테스트용)
   {
-    id: "f-003", email: "newgirl@test.com", password: "1234", gender: "여자", status: "pending", createdAt: new Date().toISOString(), expiresAt: null, blocked: false,
-    imageUrl: "/uploads/kimjiwoo.png", name: "신규여성", birthYear: "1999년", city: "서울", district: "남부",
-    education: "서울 4년제 졸업", height: "165", job: "회계법인_회계사", jobType: "전문직",
+    id: "f-003", email: "yuna@test.com", password: "1234", gender: "여자", status: "approved", createdAt: "2026-03-09T10:00:00.000Z", expiresAt: "2026-04-09T10:00:00.000Z", blocked: false,
+    imageUrl: "/uploads/kimjiwoo.png", name: "박유나", birthYear: "1996년", city: "서울", district: "남부",
+    education: "SKY카포 졸업", height: "167", job: "회계법인_회계사", jobType: "전문직",
     salary: "6,000만원 이상 ~ 8,000만원 미만", smoking: "비흡연", mbti: "INTJ",
     charm: "논리적이고 독립적이에요", datingStyle: "서로의 공간을 존중하는 스타일", phone: "01077770000",
     idealHeight: "176 ~ 180", idealAge: "1996년 ~ 1994년", idealCity: "서울", idealDistrict: "남부",
     idealSmoking: "비흡연", idealEducation: "SKY카포 졸업", idealJobType: "전문직",
     idealSalary: "8,000만원 이상 ~ 1억원 미만", priority: "연봉",
+  },
+  // 승인대기 여성 (NEW)
+  {
+    id: "f-006", email: "newgirl@test.com", password: "1234", gender: "여자", status: "pending", createdAt: new Date().toISOString(), expiresAt: null, blocked: false,
+    imageUrl: "/uploads/kimjiwoo.png", name: "신규여성", birthYear: "1999년", city: "서울", district: "동부",
+    education: "서울 4년제 졸업", height: "161", job: "스타트업_기획자", jobType: "중소기업",
+    salary: "3,000만원 이상 ~ 4,000만원 미만", smoking: "비흡연", mbti: "ENFJ",
+    charm: "소통을 잘하고 아이디어가 많아요", datingStyle: "함께 계획 세우는 걸 좋아해요", phone: "01066660000",
+    idealHeight: "176 ~ 180", idealAge: "1996년 ~ 1994년", idealCity: "서울", idealDistrict: "동부",
+    idealSmoking: "비흡연", idealEducation: "서울 4년제 졸업", idealJobType: "대기업",
+    idealSalary: "4,000만원 이상 ~ 6,000만원 미만", priority: "키",
   },
   // 반려된 여성
   {
@@ -193,22 +204,24 @@ const SEED_USERS: User[] = [
 ];
 
 const SEED_MATCH_REQUESTS: MatchRequest[] = [
-  // 김지우(f-001) → 박현우(m-001): 수락됨
+  // 김지우(f-001, approved) → 박현우(m-001, approved): 수락됨
   { id: "mr-001", fromUserId: "f-001", toUserId: "m-001", action: "accepted", createdAt: "2026-03-11T15:00:00.000Z", rejectedAt: null },
-  // 김지우(f-001) → 최준혁(m-002): 대기 중
+  // 김지우(f-001, approved) → 최준혁(m-002, approved): 대기 중
   { id: "mr-002", fromUserId: "f-001", toUserId: "m-002", action: "pending", createdAt: "2026-03-12T10:00:00.000Z", rejectedAt: null },
-  // 김지우(f-001) → 김도윤(m-003): 거절됨
+  // 김지우(f-001, approved) → 김도윤(m-003, approved): 거절됨
   { id: "mr-003", fromUserId: "f-001", toUserId: "m-003", action: "rejected", createdAt: "2026-03-10T12:00:00.000Z", rejectedAt: "2026-03-11T09:00:00.000Z" },
-  // 이서연(f-002) → 정민수(m-004): 수락됨
+  // 이서연(f-002, approved) → 정민수(m-004, approved): 수락됨
   { id: "mr-004", fromUserId: "f-002", toUserId: "m-004", action: "accepted", createdAt: "2026-03-10T16:00:00.000Z", rejectedAt: null },
-  // 이서연(f-002) → 이승우(m-005): 대기 중
+  // 이서연(f-002, approved) → 이승우(m-005, approved): 대기 중
   { id: "mr-005", fromUserId: "f-002", toUserId: "m-005", action: "pending", createdAt: "2026-03-12T11:00:00.000Z", rejectedAt: null },
-  // 이서연(f-002) → 한지훈(m-006): 거절됨
+  // 이서연(f-002, approved) → 한지훈(m-006, approved): 거절됨
   { id: "mr-006", fromUserId: "f-002", toUserId: "m-006", action: "rejected", createdAt: "2026-03-09T18:00:00.000Z", rejectedAt: "2026-03-10T08:00:00.000Z" },
-  // 신규여성(f-003) → 박현우(m-001): 대기 중
+  // 박유나(f-003, approved) → 박현우(m-001, approved): 대기 중
   { id: "mr-007", fromUserId: "f-003", toUserId: "m-001", action: "pending", createdAt: "2026-03-12T14:00:00.000Z", rejectedAt: null },
-  // 신규여성(f-003) → 오태현(m-007): 대기 중
+  // 박유나(f-003, approved) → 오태현(m-007, approved): 대기 중
   { id: "mr-008", fromUserId: "f-003", toUserId: "m-007", action: "pending", createdAt: "2026-03-12T14:30:00.000Z", rejectedAt: null },
+  // 박유나(f-003, approved) → 강민재(m-009, approved): 수락됨
+  { id: "mr-009", fromUserId: "f-003", toUserId: "m-009", action: "accepted", createdAt: "2026-03-11T10:00:00.000Z", rejectedAt: null },
 ];
 
 const SEED_CART: CartItem[] = [
